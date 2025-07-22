@@ -1,0 +1,79 @@
+# Test Sending Windows to Raspberry Turkish
+
+## 1- "mosquitto" indiriyoruz.
+
+```
+sudo apt update
+sudo apt upgrade -y
+sudo apt install -y mosquitto mosquitto-clients
+sudo systemctl enable mosquitto
+sudo systemctl start mosquitto
+```
+
+## 2- Çalışıyor mu kontrol et
+
+```
+sudo systemctl status mosquitto
+```
+
+Çıktı bu şekilde olmalı : 
+Active: active (running)
+
+## 3- Portu dinliyor mu kontrol et
+
+```
+sudo netstat -tulnp | grep 1883
+```
+
+## 4- Mosquitto’yu Windows'a Açmak
+
+```
+sudo nano /etc/mosquitto/mosquitto.conf
+```
+
+Dosyanın en altına aşağıdakini ekliyoruz:
+
+```
+listener 1883
+allow_anonymous true
+```
+
+Devam : 
+
+```
+sudo systemctl restart mosquitto
+sudo netstat -tulnp | grep 1883
+```
+
+ÇIKTI: 
+```
+tcp 0 0 0.0.0.0:1883 0.0.0.0:* LISTEN 5896/mosquitto
+```
+
+# Windows'ta yazman gereken kod:
+
+```
+import paho.mqtt.client as mqtt
+import time
+
+mqtt_client = mqtt.Client()
+mqtt_client.connect("192.168.<RASPBERRY_IP>", 1883)
+mqtt_client.loop_start()
+
+try:
+    while True:
+        mqtt_client.publish("test", "merhaba raspberry")
+        print("Mesaj gönderildi.")
+        time.sleep(1)  # 1 saniye bekle
+except KeyboardInterrupt:
+    print("Gönderim durduruldu.")
+    mqtt_client.loop_stop()
+    mqtt_client.disconnect()
+
+```
+
+# Raspery'de yazman gereke kod:
+
+```
+mosquitto_sub -t test
+```
